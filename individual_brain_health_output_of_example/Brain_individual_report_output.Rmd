@@ -1,0 +1,1050 @@
+---
+title: "Brain Health Report"
+author: " "
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,error = FALSE,message = FALSE)
+```
+
+
+## Deviation of global features: 
+#### lightblue=Male,darkred=Female,soldline=Meidan,dottedline=95%CI
+
+```{r, warning = FALSE, include = FALSE,echo=FALSE}
+#load required packages
+#install.packages('gamlss')
+rm(list=ls())
+
+datapath='C:/ZZZ/work/manuscript/Lifespan-main'# change
+setwd(datapath)
+source("100.common-variables.r")
+source("101.common-functions.r")
+
+source("ZZZ_function.R")
+source("300.variables.r")
+source("301.functions.r")
+
+
+#install.packages('gamlss')
+rm(list=ls())
+library(glmnet)
+library(dplyr);
+library(ggplot2)
+library(ggplot2)
+library(stringr)
+library(robustbase)
+library(gamlss)
+library(ggplot2)
+library(reshape2)
+
+
+source("100.common-variables.r")
+source("101.common-functions.r")
+
+source("ZZZ_function.R")
+source("300.variables.r")
+source("301.functions.r")
+
+library(raincloudplots)
+library(commonmark)
+library(ggplot2)
+#library(ggstatsplot)
+library(lmerTest)
+library(effectsize)
+library(ggrain)
+library(ggsci)
+library(ggdist)
+library(hrbrthemes)
+
+```
+
+```{r, warning = FALSE, include = FALSE,echo=FALSE}
+ 
+ 
+#read individual freesurfer-derived phenotypes and calcuate the centiles
+datafile = 'C:/ZZZ/work/manuscript/Lifespan-main/Results1_individual.xlsx'
+
+
+datapath = 'C:/ZZZ/work/manuscript/Lifespan-main'# change
+setwd(datapath)#set the filepath
+path <- list()
+str_lab <- 'global_and_local_feature'# change
+path[[1]] <- paste0(datapath, '/test_zzz_update_20240116/aseg.vol.table')
+
+path[[2]] <-
+  paste0(datapath, '/test_zzz_update_20240116/lh.aparc.thickness.table')
+
+path[[3]] <-
+  paste0(datapath, '/test_zzz_update_20240116/rh.aparc.thickness.table')
+
+path[[4]] <-
+  paste0(datapath, '/test_zzz_update_20240116/lh.aparc.area.table')
+
+path[[5]] <-
+  paste0(datapath, '/test_zzz_update_20240116/rh.aparc.area.table')
+
+path[[6]] <-
+  paste0(datapath, '/test_zzz_update_20240116/lh.aparc.volume.table')
+
+path[[7]] <-
+  paste0(datapath, '/test_zzz_update_20240116/rh.aparc.volume.table')
+
+path[[8]] <- paste0(datapath, '/test_zzz_update_20240116/Global_feature')
+
+
+
+RDSfile_all <- NULL
+for (i in 1:length(path))
+{
+  feature_path = path[[i]]
+
+  setwd(feature_path)
+  myfile <- list.files()
+  RDSfile_all0 <-
+    myfile[grep(myfile, pattern = "our_model.rds$")]
+  for (j in RDSfile_all0)
+  {
+    #RDSfile_all0<-paste0(feature_path,'/',RDSfile_all0);
+    RDSfile_all <- c(RDSfile_all, paste0(feature_path, '/', j))
+
+
+  }
+}
+
+datapath = 'C:/ZZZ/work/manuscript/Lifespan-main'# change
+setwd(datapath)
+
+#loading for Global_feature
+var <-
+  c(
+    'global.table',
+    'aseg.vol.table',
+    'lh.aparc.volume.table',
+    'rh.aparc.volume.table',
+    'lh.aparc.thickness.table',
+    'rh.aparc.thickness.table',
+    'lh.aparc.area.table',
+    'rh.aparc.area.table'
+  )
+setwd(datapath)
+patient_index=5768;
+
+  MRI <- data.frame(read_excel(datafile, sheet = 'global.table'))
+#individual_name<-c("20211201_WENGJINYUAN_029_M_p181")
+#individual_name<-c("20211201_ZHUOZHIZHENG_034_M_p253")
+#individual_name<-c("20220511_SUNJUN_033_F_p624")
+#individual_name<-c("20221230_LIJUNJIE_027_M_p2412")
+#individual_name<-c("20230411_LIYUNA_026_F_p577")
+#individual_name<-c("20230427_CHAILI_027_F_p696")
+#individual_name<-c("20220512_HUATIANTIAN_023_F_p626")
+#individual_name<-c("20230104_LIZHUYUERONG_025_F_p2464")
+#individual_name<-c("Lifespan%3A20210203_WEIREN_029_M_p1843")
+#individual_name<-c("20230120_XUXIAOLU_032_F_p89")
+#individual_name<-c("20220521_XUSIYAO_024_F_p735")
+#individual_name<-c("20230112_Sunting_033_F_p12")
+#individual_name<-c("20230420_GUOMIN_035_F_p648")
+#individual_name<-c("20220725_lvshan_030_F_p1120")
+#individual_name<-c("20230104_JINYING_024_F_p2462")
+#individual_name<-c("20230106_wuminghao_033_M_p2494")
+#individual_name<-c("20220523_QULIYING_028_F_p637")
+#individual_name<-c("20220717_LIUCHENGHAO_024_M_p1065")
+#individual_name<-c("20221227_SHIDONGLI_037_F_p2390")
+#individual_name<-c("20211226_LIYUXING_024_F_p342")
+#individual_name<-c("20211226_LIUWAN_026_F_p337")
+#individual_name<-c("20221014_LIUXINRU_023_F_p1828")
+#individual_name<-c("20221230_ZHUXIAOQIN_023_F_p2411")
+#individual_name<-c("20211226_LUQI_024_F_p341")
+#individual_name<-c("20220717_WUDI_024_F_p1064")
+#individual_name<-c("20210922_YANGWENJING_073_F_p1757")
+#individual_name<-c("20230408_TANGXIANZHANG_063_M_p556")
+#individual_name<-c("20220323_SHIJIAHUI_072_M_p288")
+#individual_name<-c("20220512_HUATIANTIAN_023_F_p626")
+#individual_name<-c("test3")
+individual_name<-c("20230518_WANGHONGGANG_049_M_p799")
+
+individual_index<-NULL
+individual_num=0;
+for(name in MRI$Freesufer_Path3)
+{
+  individual_num<-individual_num+1;
+
+  if(individual_name %in% name){
+    individual_index<-individual_num;
+  }else{next}
+}
+  patient_index<-individual_index
+
+  all_data1_raw<- MRI[c(patient_index), c(7,8,10,11)]
+  all_data1_centile<- MRI[c(patient_index), c(7,8,10,11)]
+
+
+for (sheet in var)
+  #for local feature
+{
+  setwd(datapath)
+  MRI <- read_excel(datafile, sheet = sheet)
+  MRI <- MRI[c(patient_index, 5768, 5769), ]
+
+  if (sheet == "aseg.vol.table")
+  {
+    MRI[, 'cerebellum_WM'] <-
+      MRI$`Left-Cerebellum-White-Matter` + MRI$`Right-Cerebellum-White-Matter`
+    MRI[, 'cerebellum_GM'] <-
+      MRI$`Left-Cerebellum-Cortex` + MRI$`Right-Cerebellum-Cortex`
+    MRI[, 'cerebellum_total'] <-
+      MRI[, 'cerebellum_WM'] + MRI[, 'cerebellum_GM']
+
+    MRI[, 'CC'] <- MRI$CC_Anterior + MRI$CC_Central + MRI$CC_Mid_Anterior +
+      MRI$CC_Mid_Posterior + MRI$CC_Posterior
+  }
+
+  str = sheet
+
+
+
+  if (sheet == "global.table")
+  {
+    for (i in 1:dim(MRI)[1])
+    {
+      MRI[i, 'mean_thickness'] <-
+        (MRI[i, 'meanCT2_lhMeanThickness'] * MRI[i, 'meanCT2_lhVertex'] +
+           MRI[i, 'meanCT2_rhMeanThickness'] * MRI[i, 'meanCT2_rhVertex']) /
+        (MRI[i, 'meanCT2_lhVertex'] + MRI[i, 'meanCT2_rhVertex'])
+      MRI[i, 'total_surface_arrea'] <-
+        MRI[i, 'totalSA2_lh'] + MRI[i, 'totalSA2_rh']
+    }
+    str = 'Global_feature'
+
+  }
+
+  tem_feature <- colnames(MRI)
+
+
+  all_data <- MRI
+
+  Z_data_new <- list()
+
+  Quant_data_new <- list()
+
+  #for(i in tem_feature[1:length(tem_feature)])
+  for (i in tem_feature[1:length(tem_feature)])
+  {
+    all_data[, 'feature'] <- all_data[, i]
+
+    rads_file <- paste0(str, '_', i, '_loop_our_model.rds')
+    
+    #if (!exists(rads_file)) {next}
+
+
+    rads_index <- NULL
+    for (rads1 in RDSfile_all)
+    {
+      if (grepl(rads_file, rads1)) {
+        rads_index <- rads1
+      }
+    }
+
+    if (is.null(rads_index)) {
+      next
+    }
+    else{
+      results <- readRDS(rads_index)
+      print(paste0(rads_index, '-vs-', i))
+    }
+
+
+
+    Z_score_sum <- NULL
+
+    Quant_score_sum <- NULL
+
+    m2 <- results$m2
+    m0 <- results$m0
+
+    #for mu
+    # all_data[is.na(all_data$Sex),'Sex']<-'Male'
+    # all_data[!is.na(all_data$feature)&!is.infinite(all_data$feature)&
+    #            !is.na(all_data$Age)&!is.na(all_data$Sex),]
+    all_data$Sex <- as.factor(all_data$Sex)
+    #all_data$Site_ZZZ<-as.factor(all_data$Site_ZZZ)
+    all_data[2, 'Site'] <- 'CC'
+    all_data$Site_ZZZ <- as.factor(all_data$Site)
+
+
+    tem_rnd <- matrix(0, dim(all_data)[1], 1)
+
+    Model.Frame <- model.frame(formula = m2$mu.formula, data = all_data)
+
+    Model.Matrix <- model.matrix(m2$mu.formula, Model.Frame)
+    Fit.fix <-
+      matrix(m2$mu.coefficients[colnames(Model.Matrix)],
+             ncol = 1,
+             dimnames = list(colnames(Model.Matrix), 'Beta'))
+    if (!is.null(m2$mu.coefSmo[[1]]))
+    {
+      Fit.fix[length(Fit.fix)] = 0
+
+      for (iz in 1:dim(all_data)[1]) {
+        if (all_data$Site_ZZZ[iz] %in% names(m2$mu.coefSmo[[1]]$coef)) {
+          tem_rnd[iz] <-
+            m2$mu.coefSmo[[1]]$coef[as.character(all_data$Site_ZZZ[iz])]
+        } else{
+          tem_rnd[iz] <- mean(m2$mu.coefSmo[[1]]$coef)
+        }
+      }
+    } else{
+      print('no random effects for this term')
+    }
+
+
+    mu <- exp(as.vector(Model.Matrix %*% Fit.fix) + as.vector(tem_rnd))
+    #for sigma
+    tem_rnd <- matrix(0, dim(all_data)[1], 1)
+
+    Model.Frame <- model.frame(formula = m2$sigma.formula, data = all_data)
+
+    Model.Matrix <- model.matrix(m2$sigma.formula, Model.Frame)
+    Fit.fix <-
+      matrix(
+        m2$sigma.coefficients[colnames(Model.Matrix)],
+        ncol = 1,
+        dimnames = list(colnames(Model.Matrix), 'Beta')
+      )
+    if (!is.null(m2$sigma.coefSmo[[1]]))
+    {
+      Fit.fix[length(Fit.fix)] = 0
+
+      for (iz in 1:dim(all_data)[1]) {
+        if (all_data$Site_ZZZ[iz] %in% names(m2$sigma.coefSmo[[1]]$coef)) {
+          tem_rnd[iz] <-
+            m2$sigma.coefSmo[[1]]$coef[as.character(all_data$Site_ZZZ[iz])]
+        } else{
+          tem_rnd[iz] <- mean(m2$sigma.coefSmo[[1]]$coef)
+        }
+      }
+    } else{
+      print('no random effects for this term')
+    }
+
+
+
+    sigma <- exp(as.vector(Model.Matrix %*% Fit.fix) + as.vector(tem_rnd))
+
+    #sigma<-(as.vector(Model.Matrix %*% Fit.fix))
+    #for nu
+
+    Model.Frame <- model.frame(formula = m2$nu.formula, data = all_data)
+
+    Model.Matrix <- model.matrix(m2$nu.formula, Model.Frame)
+    Fit.fix <-
+      matrix(m2$nu.coefficients[colnames(Model.Matrix)],
+             ncol = 1,
+             dimnames = list(colnames(Model.Matrix), 'Beta'))
+    if (!is.null(m2$nu.coefSmo[[1]]))
+    {
+      Fit.fix[length(Fit.fix)] = 0
+
+    } else{
+      print('no random effects for this term')
+    }
+
+
+    nu <- as.vector(Model.Matrix[, colnames(Model.Matrix)[1]] * Fit.fix[1])
+
+
+
+    Z_score_sum <-
+      zzz_cent(
+        obj = m2,
+        type = c("z-scores"),
+        mu = mu,
+        sigma = sigma,
+        nu = nu,
+        xname = 'Age',
+        xvalues = all_data$Age,
+        yval = all_data$feature,
+        calibration = FALSE,
+        lpar = 3
+      )
+
+    Quant_score_sum <-
+      zzz_cent(
+        obj = m2,
+        type = c("z-scores"),
+        mu = mu,
+        sigma = sigma,
+        nu = nu,
+        xname = 'Age',
+        xvalues = all_data$Age,
+        yval = all_data$feature,
+        calibration = FALSE,
+        lpar = 3,
+        cdf = TRUE
+      )
+
+
+    Z_score_sum <- data.frame(Z_score_sum)
+
+    colnames(Z_score_sum) <- c('Z_score')
+
+
+    Quant_score_sum <- data.frame(Quant_score_sum)
+
+    colnames(Quant_score_sum) <- c('Quant_score')
+
+    #
+    # Z_data_new[[i]] <- Z_score_sum
+    # Quant_data_new[[i]] <- Quant_score_sum
+    #
+    # results$Zscore_new <- Z_data_new
+    # results$Quant_data_new <- Quant_data_new
+    # results$all_data <- all_data
+    # results$str <- str
+    # results$i <- i
+
+    all_data1_raw<- cbind(all_data1_raw,all_data$feature[1]);
+    colnames(all_data1_raw)[dim(all_data1_raw)[2]]<-i
+   all_data1_centile<- cbind(all_data1_centile,Quant_score_sum[1,1]);
+   colnames(all_data1_centile)[dim(all_data1_centile)[2]]<-i
+
+
+
+  }
+
+}
+
+  setwd(paste0(datapath, '/test'))
+
+  write.csv(all_data1_raw,'individual_raw_data.csv')
+  write.csv(all_data1_centile,'individual_centile_score.csv')
+#
+
+```
+ 
+```{r, warning = FALSE, include = TRUE,echo=FALSE}
+# setwd('C:/ZZZ/work/manuscript/Lifespan-main/test_zzz_quant_update/figure3')
+# results<-readRDS('BHI_predict_mdoel.rds')
+# 
+# setwd('C:/ZZZ/work/manuscript/Lifespan-main/test');
+# 
+# individual_data<-read.csv('individual_centile_score.csv',header=TRUE,check.names=F);
+# 
+# 
+# predict_BHI<-predict(results$model,type='response',newdata=individual_data);
+# 
+# predict_BHI<-(-(predict_BHI+results$W0))
+# predict_BHI<-round(predict_BHI,2)
+# options('scipen'=12);
+#cat(paste0("Brain Healthy Index is: ",round(predict_BHI,2)));
+```
+
+
+```{r,warning = FALSE, include = FALSE,echo=FALSE}
+library(ggplot2)
+library(ggpubr)
+#rm (list = ls ())
+width1 = 4; height1=3
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test');
+
+individual_data<-read.csv('individual_raw_data.csv',header=TRUE,check.names=F);
+
+
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test_zzz_update_20240116/Global_feature')
+results<-readRDS('Global_feature_GMV_loop_our_model.rds');
+p2<-results$p2
+Female_p2<-results$Female_p2;Female_p2[,c(2,3,4,5,6)]<-Female_p2[,c(2,3,4,5,6)]/10000
+Male_p2<-results$Male_p2;Male_p2[,c(2,3,4,5,6)]<-Male_p2[,c(2,3,4,5,6)]/10000
+individual_data[,results$i]<-individual_data[,results$i]/10000
+
+f1<-ggplot()+
+  geom_line(data=Male_p2,aes(x=Age,y=median),color=c('#00CCFF'),linewidth=2,linetype=c('solid'))+
+  #geom_line(data=p2,aes(x=Age,y=lower99CI/10000),color=c('red'),linewidth=1,linetype=c('dashed'))+
+  geom_line(data=Male_p2,aes(x=Age,y=lower95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  geom_line(data=Male_p2,aes(x=Age,y=upper95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  
+  # geom_line(data=Female_p2,aes(x=Age,y=median),color=c('darkred'),linewidth=2,linetype=c('solid'))+
+  # #geom_line(data=p2,aes(x=Age,y=lower99CI/10000),color=c('red'),linewidth=1,linetype=c('dashed'))+
+  # geom_line(data=Female_p2,aes(x=Age,y=lower95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  # geom_line(data=Female_p2,aes(Age,y=upper95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  
+  #geom_line(data=p2,aes(Age,y=upper99CI/10000),color=c('#666666'),linewidth=1,linetype=c('dashed'))+
+  geom_point(aes(individual_data$Age,individual_data[,results$i]),colour='red',size=2,stroke=5)+
+  labs(x='Age (years)',y=paste0(results$i,' (ml)'))+
+  # legend("topright",
+  #      legend=c('Male','Lower 95%CI','Upper 95%CI','Female','Lower 95%CI','Upper 95%CI'),
+  #      fill = c('#00CCFF','#00CCFF','#00CCFF','darkred','darkred','darkred'),
+  #      col = c('#00CCFF','#00CCFF','#00CCFF','darkred','darkred','darkred'),
+  #      title = "cyl") 
+  theme_bw()+
+  theme(axis.text = element_text(size = 14,colour = 'black'),
+        axis.title = element_text(size=14,colour = 'black'))
+  #scale_x_log10()
+print(f1)
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test');
+ggsave(paste0(results$i,".png"),width = width1, height = height1, dpi = 300)
+
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test_zzz_update_20240116/Global_feature')
+results<-readRDS('Global_feature_sGMV_loop_our_model.rds');
+p2<-results$p2
+Female_p2<-results$Female_p2;Female_p2[,c(2,3,4,5,6)]<-Female_p2[,c(2,3,4,5,6)]/10000
+Male_p2<-results$Male_p2;Male_p2[,c(2,3,4,5,6)]<-Male_p2[,c(2,3,4,5,6)]/10000
+individual_data[,results$i]<-individual_data[,results$i]/10000
+f2<-ggplot()+
+  geom_line(data=Male_p2,aes(x=Age,y=median),color=c('#00CCFF'),linewidth=2,linetype=c('solid'))+
+  #geom_line(data=p2,aes(x=Age,y=lower99CI/10000),color=c('red'),linewidth=1,linetype=c('dashed'))+
+  geom_line(data=Male_p2,aes(x=Age,y=lower95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  geom_line(data=Male_p2,aes(Age,y=upper95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  
+  # geom_line(data=Female_p2,aes(x=Age,y=median),color=c('darkred'),linewidth=2,linetype=c('solid'))+
+  # #geom_line(data=p2,aes(x=Age,y=lower99CI/10000),color=c('red'),linewidth=1,linetype=c('dashed'))+
+  # geom_line(data=Female_p2,aes(x=Age,y=lower95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  # geom_line(data=Female_p2,aes(Age,y=upper95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  
+  #geom_line(data=p2,aes(Age,y=upper99CI/10000),color=c('#666666'),linewidth=1,linetype=c('dashed'))+
+  geom_point(aes(individual_data$Age,individual_data[,results$i]),colour='red',size=2,stroke=5)+
+  labs(x='Age (years)',y=paste0(results$i,' (ml)'))+
+  theme_bw()+
+  theme(axis.text = element_text(size = 14,colour = 'black'),
+        axis.title = element_text(size=14,colour = 'black'))
+  #scale_x_log10()
+
+print(f2)
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test');
+ggsave(paste0(results$i,".png"),width = width1, height = height1, dpi = 300)
+
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test_zzz_update_20240116/Global_feature')
+results<-readRDS('Global_feature_WMV_loop_our_model.rds');
+p2<-results$p2
+Female_p2<-results$Female_p2;Female_p2[,c(2,3,4,5,6)]<-Female_p2[,c(2,3,4,5,6)]/10000
+Male_p2<-results$Male_p2;Male_p2[,c(2,3,4,5,6)]<-Male_p2[,c(2,3,4,5,6)]/10000
+individual_data[,results$i]<-individual_data[,results$i]/10000
+f3<-ggplot()+
+  geom_line(data=Male_p2,aes(x=Age,y=median),color=c('#00CCFF'),linewidth=2,linetype=c('solid'))+
+  #geom_line(data=p2,aes(x=Age,y=lower99CI/10000),color=c('red'),linewidth=1,linetype=c('dashed'))+
+  geom_line(data=Male_p2,aes(x=Age,y=lower95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  geom_line(data=Male_p2,aes(Age,y=upper95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  
+  # geom_line(data=Female_p2,aes(x=Age,y=median),color=c('darkred'),linewidth=2,linetype=c('solid'))+
+  # #geom_line(data=p2,aes(x=Age,y=lower99CI/10000),color=c('red'),linewidth=1,linetype=c('dashed'))+
+  # geom_line(data=Female_p2,aes(x=Age,y=lower95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  # geom_line(data=Female_p2,aes(Age,y=upper95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  
+  #geom_line(data=p2,aes(Age,y=upper99CI/10000),color=c('#666666'),linewidth=1,linetype=c('dashed'))+
+  geom_point(aes(individual_data$Age,individual_data[,results$i]),colour='red',size=2,stroke=5)+
+  labs(x='Age (years)',y=paste0(results$i,' (ml)'))+
+  theme_bw()+
+  theme(axis.text = element_text(size = 14,colour = 'black'),
+        axis.title = element_text(size=14,colour = 'black'))
+  #scale_x_log10()
+
+print(f3)
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test');
+ggsave(paste0(results$i,".png"),width = width1, height = height1, dpi = 300)
+
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test_zzz_update_20240116/Global_feature')
+results<-readRDS('Global_feature_Ventricles_loop_our_model.rds');
+p2<-results$p2
+Female_p2<-results$Female_p2;Female_p2[,c(2,3,4,5,6)]<-Female_p2[,c(2,3,4,5,6)]/10000
+Male_p2<-results$Male_p2;Male_p2[,c(2,3,4,5,6)]<-Male_p2[,c(2,3,4,5,6)]/10000
+individual_data[,results$i]<-individual_data[,results$i]/10000
+f4<-ggplot()+
+  geom_line(data=Male_p2,aes(x=Age,y=median),color=c('#00CCFF'),linewidth=2,linetype=c('solid'))+
+  #geom_line(data=p2,aes(x=Age,y=lower99CI/10000),color=c('red'),linewidth=1,linetype=c('dashed'))+
+  geom_line(data=Male_p2,aes(x=Age,y=lower95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  geom_line(data=Male_p2,aes(Age,y=upper95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  
+  # geom_line(data=Female_p2,aes(x=Age,y=median),color=c('darkred'),linewidth=2,linetype=c('solid'))+
+  # #geom_line(data=p2,aes(x=Age,y=lower99CI/10000),color=c('red'),linewidth=1,linetype=c('dashed'))+
+  # geom_line(data=Female_p2,aes(x=Age,y=lower95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  # geom_line(data=Female_p2,aes(Age,y=upper95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  
+  #geom_line(data=p2,aes(Age,y=upper99CI/10000),color=c('#666666'),linewidth=1,linetype=c('dashed'))+
+  geom_point(aes(individual_data$Age,individual_data[,results$i]),colour='red',size=2,stroke=5)+
+  labs(x='Age (years)',y=paste0(results$i,' (ml)'))+
+  theme_bw()+
+  theme(axis.text = element_text(size = 14,colour = 'black'),
+        axis.title = element_text(size=14,colour = 'black'))
+  #scale_x_log10()
+
+print(f4)
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test');
+ggsave(paste0(results$i,".png"),width = width1, height = height1, dpi = 300)
+
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test_zzz_update_20240116/Global_feature')
+results<-readRDS('aseg.vol.table_cerebellum_total_loop_our_model.rds');
+p2<-results$p2
+Female_p2<-results$Female_p2;Female_p2[,c(2,3,4,5,6)]<-Female_p2[,c(2,3,4,5,6)]/10000
+Male_p2<-results$Male_p2;Male_p2[,c(2,3,4,5,6)]<-Male_p2[,c(2,3,4,5,6)]/10000
+individual_data[,results$i]<-individual_data[,results$i]/10000
+
+f5<-ggplot()+
+  geom_line(data=Male_p2,aes(x=Age,y=median),color=c('#00CCFF'),linewidth=2,linetype=c('solid'))+
+  #geom_line(data=p2,aes(x=Age,y=lower99CI/10000),color=c('red'),linewidth=1,linetype=c('dashed'))+
+  geom_line(data=Male_p2,aes(x=Age,y=lower95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  geom_line(data=Male_p2,aes(Age,y=upper95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  
+  # geom_line(data=Female_p2,aes(x=Age,y=median),color=c('darkred'),linewidth=2,linetype=c('solid'))+
+  # #geom_line(data=p2,aes(x=Age,y=lower99CI/10000),color=c('red'),linewidth=1,linetype=c('dashed'))+
+  # geom_line(data=Female_p2,aes(x=Age,y=lower95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  # geom_line(data=Female_p2,aes(Age,y=upper95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  
+  #geom_line(data=p2,aes(Age,y=upper99CI/10000),color=c('#666666'),linewidth=1,linetype=c('dashed'))+
+  geom_point(aes(individual_data$Age,individual_data[,results$i]),colour='red',size=2,stroke=5)+
+  labs(x='Age (years)',y=paste0('Cerebellum (ml)'))+
+  theme_bw()+
+  theme(axis.text = element_text(size = 14,colour = 'black'),
+        axis.title = element_text(size=14,colour = 'black'))
+  #scale_x_log10()
+
+print(f5)
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test');
+ggsave(paste0(results$i,".png"),width = width1, height = height1, dpi = 300)
+
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test_zzz_update_20240116/Global_feature')
+results<-readRDS('aseg.vol.table_Brain-Stem_loop_our_model.rds');
+p2<-results$p2
+Female_p2<-results$Female_p2;Female_p2[,c(2,3,4,5,6)]<-Female_p2[,c(2,3,4,5,6)]/10000
+Male_p2<-results$Male_p2;Male_p2[,c(2,3,4,5,6)]<-Male_p2[,c(2,3,4,5,6)]/10000
+individual_data[,results$i]<-individual_data[,results$i]/10000
+f6<-ggplot()+
+  geom_line(data=Male_p2,aes(x=Age,y=median),color=c('#00CCFF'),linewidth=2,linetype=c('solid'))+
+  #geom_line(data=p2,aes(x=Age,y=lower99CI/10000),color=c('red'),linewidth=1,linetype=c('dashed'))+
+  geom_line(data=Male_p2,aes(x=Age,y=lower95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  geom_line(data=Male_p2,aes(Age,y=upper95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  
+  # geom_line(data=Female_p2,aes(x=Age,y=median),color=c('darkred'),linewidth=2,linetype=c('solid'))+
+  # #geom_line(data=p2,aes(x=Age,y=lower99CI/10000),color=c('red'),linewidth=1,linetype=c('dashed'))+
+  # geom_line(data=Female_p2,aes(x=Age,y=lower95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  # geom_line(data=Female_p2,aes(Age,y=upper95CI),color=c('darkred'),linewidth=1,linetype=c('dotted'))+
+  
+  #geom_line(data=p2,aes(Age,y=upper99CI/10000),color=c('#666666'),linewidth=1,linetype=c('dashed'))+
+  geom_point(aes(individual_data$Age,individual_data[,results$i]),colour='red',size=2,stroke=5)+
+  labs(x='Age (years)',y=paste0('Brainstem (ml)'))+
+  theme_bw()+
+  theme(axis.text = element_text(size = 14,colour = 'black'),
+        axis.title = element_text(size=14,colour = 'black'))
+  #scale_x_log10()
+print(f6)
+
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test');
+ggsave(paste0(results$i,".png"),width = width1, height = height1, dpi = 300)
+#library(cowplot)
+
+# library('png')
+# setwd('C:/ZZZ/work/manuscript/Lifespan-main/test');
+# 
+# figs<-c('GMV.png','sGMV.png','WMV.png','Ventricles.png','cerebellum_total.png','Brain-Stem.png')
+# f1<-readPNG('GMV.png')
+#ggarrange(f1,f2,f3,f4,f5,f6,ncol=6,nrow=1)
+
+```
+
+```{r warning = FALSE, include = TRUE,echo=FALSE, out.width="50%",fig.align='center',fig.show='hold',fig.cap=' '}
+library(knitr)
+p1<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/GMV.png')
+p2<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/sGMV.png')
+p3<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/WMV.png')
+p4<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/Ventricles.png')
+
+p5<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/cerebellum_total.png')
+p6<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/Brain-Stem.png')
+
+
+knitr::include_graphics(c(p1,p2))
+#knitr::include_graphics(c(p3,p4))
+#knitr::include_graphics(c(p5,p6))
+
+```
+
+```{r warning = FALSE, include = TRUE,echo=FALSE, out.width="50%",fig.align='center',fig.show='hold',fig.cap=' '}
+library(knitr)
+
+p1<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/WMV.png')
+p2<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/Ventricles.png')
+
+#knitr::include_graphics(c(p1,p2))
+knitr::include_graphics(c(p1,p2))
+#knitr::include_graphics(c(p5,p6))
+
+```
+
+```{r warning = FALSE, include = TRUE,echo=FALSE, out.width="50%",fig.align='center',fig.show='hold',fig.cap=' '}
+library(knitr)
+p1<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/cerebellum_total.png')
+p2<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/Brain-Stem.png')
+
+
+#knitr::include_graphics(c(p1,p2))
+#knitr::include_graphics(c(p3,p4))
+knitr::include_graphics(c(p1,p2))
+
+```
+
+\newpage
+## Deviation of local features:
+#### lightblue=supernormal,darkred=abnormal
+
+```{r, warning = FALSE, include = FALSE,echo=FALSE}
+library(ggplot2)
+library(ggpubr)
+width1 = 4; height1=3
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test');
+individual_data<-read.csv('individual_centile_score.csv',header=TRUE,check.names=F);
+del_str='_thickness'
+del_str='_area'
+
+
+
+library(ggseg)
+
+#for cortical volume
+del_str='_volume'
+feature_seg<-colnames(individual_data)[36:103];
+
+library(stringr)
+feature_seg<-str_remove_all(string = feature_seg,pattern = del_str)
+value=individual_data[1,36:103]
+value[,is.na(value[1,])]<-0
+
+seg_data=data.frame(label=feature_seg,
+                    Centile=as.numeric(value))
+
+library(ggsci)
+
+p<-ggplot(seg_data)+
+  geom_brain(atlas=dk,
+             size = 0.1,
+             position=position_brain(hemi ~ side),
+             #hemi=hemis,
+             mapping = aes(fill = Centile))+
+  theme_void()+
+  theme(legend.title = element_text(size=14,colour = 'black'), #change legend title font size
+        legend.text = element_text(size=10,colour = 'black'))+ #change legend text font size)
+  #scale_fill_gradient(limits=c(4.5,max(seg_data$Peak_age)),low='grey',high='#990000')
+   scale_fill_gradient2(limits=c(0,1),low='#990000',midpoint = 0.5, high='#00CCFF')
+p
+ggsave(paste0("cortical_volume.png"),width = width1, height = height1, dpi = 300)
+
+
+
+feature_seg<-colnames(individual_data)[c(14:17,19:22,25:32)];
+#feature_seg<-str_remove_all(string = feature_seg,pattern = del_str)
+value=individual_data[1,c(14:17,19:22,25:32)]
+value[,is.na(value[1,])]<-0
+feature_seg[1]<-c("Left-Thalamus-Proper")
+feature_seg[9]<-c("Right-Thalamus-Proper")
+seg_data=data.frame(label=feature_seg,
+                    Centile=as.numeric(value))
+library(ggsci)
+
+p<-ggplot(seg_data)+
+  geom_brain(atlas=aseg,
+             size = 0.1,
+             side='coronal',
+             mapping = aes(fill = Centile))+
+  theme_void()+
+  theme(legend.title = element_text(size=14,colour = 'black'), #change legend title font size
+        legend.text = element_text(size=10,colour = 'black'))+ #change legend text font size)
+  scale_fill_gradient2(limits=c(0,1),low='#990000',midpoint = 0.5, high='#00CCFF')
+  
+print(p)
+ggsave(paste0("subcortical_volume.png"),width = width1, height = height1, dpi = 300)
+
+```
+
+
+```{r warning = FALSE, include = TRUE,echo=FALSE, out.width="50%",fig.align='center',fig.show='hold',fig.cap=' '}
+library(knitr)
+p1<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/subcortical_volume.png')
+p2<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/cortical_volume.png')
+
+
+#knitr::include_graphics(c(p1,p2))
+#knitr::include_graphics(c(p3,p4))
+knitr::include_graphics(c(p1,p2))
+
+```
+\newpage
+## Summary of global and local features:
+#### lightblue=supernormal,darkred=abnormal
+```{r, warning = FALSE, include = FALSE,echo=FALSE}
+library(ggplot2)
+library(ggpubr)
+width1 = 4; height1=3
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test');
+individual_data<-read.csv('individual_raw_data.csv',header=TRUE,check.names=F);
+individual_score<-read.csv('individual_centile_score.csv',header=TRUE,check.names=F);
+
+del_str='_thickness'
+del_str='_area'
+del_str='_volume'
+
+sub_var<-colnames(individual_data)[c(6:9,35,18,14:17,19:22,25:32)];
+table_sub<-cbind(t(individual_data[,sub_var]/1000),t(individual_score[,sub_var]))
+colnames(table_sub)<-c('Volume(ml)','centile')
+
+sub_var_volume<-colnames(individual_data)[c(36:103)];
+
+sub_var_thickness<-colnames(individual_data)[c(104:171)];
+
+sub_var_area<-colnames(individual_data)[c(172:239)];
+
+table_cor<-cbind(t(individual_data[,sub_var_volume]/1000),
+                 t(individual_score[,sub_var_volume]),
+                 t(individual_data[,sub_var_thickness]),
+                 t(individual_score[,sub_var_thickness]),
+                 t(individual_data[,sub_var_area]/100),
+                 t(individual_score[,sub_var_area])) #此处有问题，需要检查 20240128
+
+colnames(table_cor)<-c('volume(ml)','centile_volume',
+                       'thickness(cm)','centile_thickness',
+                       'surface_area(cm2)','centile_area')
+library("htmltools")
+library("webshot") 
+
+export_formattable <- function(f, file, width = "100%", height = NULL, 
+                               background = "white", delay = 0.2)
+    {
+      w <- as.htmlwidget(f, width = width, height = height)
+      path <- html_print(w, background = background, viewer = NULL)
+      url <- paste0("file:///", gsub("\\\\", "/", normalizePath(path)))
+      webshot(url,
+              file = file,
+              selector = ".formattable_widget",
+              zoom=4,
+              delay = delay)
+}
+
+
+library(stringr)
+rownames(table_cor)<-str_remove_all(string = rownames(table_cor),pattern = del_str)
+
+table_cor<-round(table_cor,2)
+table_sub<-round(table_sub,2)
+
+library(formattable)
+#formattable(table_sub,list(centile=color_bar("pink",proportion)))
+table_sub<-data.frame(table_sub)
+
+p<-formattable(table_sub, 
+list(centile = formatter("span",   
+style = x ~ ifelse(x < 0.05,#条件1   
+                   style(display = "block",   
+                     color = "white",   
+                         font.weight = "bold",   
+                      "border-radius" = "10px",#圆角大小        
+                  "padding-right" = "4px",#背景色框的大小      
+                   "background-color" = "#990000"#背景色    
+                        ),#满足条件1变绿加粗 
+                   ifelse(x>=0.95,#条件2      
+                       style(display = "block",   
+                     color = "white",   
+                         font.weight = "bold",   
+                      "border-radius" = "10px",#圆角大小        
+                  "padding-right" = "4px",#背景色框的大小      
+                   "background-color" = "#00CCFF"#背景色    
+                        ),#满足条件2变红加粗   
+                          "color:orange")#都不满足橘黄色  
+                    ))))
+
+export_formattable(p,"global_summary.png")
+
+table_cor<-data.frame(table_cor)
+p<-formattable(table_cor, 
+list(centile_volume = formatter("span",   
+style = x ~ ifelse(x < 0.05,#条件1   
+                   style(display = "block",   
+                     color = "white",   
+                         font.weight = "bold",   
+                      "border-radius" = "10px",#圆角大小        
+                  "padding-right" = "4px",#背景色框的大小      
+                   "background-color" = "#990000"#背景色    
+                        ),#满足条件1变绿加粗 
+                   ifelse(x>=0.95,#条件2      
+                       style(display = "block",   
+                     color = "white",   
+                         font.weight = "bold",   
+                      "border-radius" = "10px",#圆角大小        
+                  "padding-right" = "4px",#背景色框的大小      
+                   "background-color" = "#00CCFF"#背景色    
+                        ),#满足条件2变红加粗   
+                          "color:orange")#都不满足橘黄色  
+                    )),
+centile_thickness = formatter("span",   
+style = x ~ ifelse(x < 0.05,#条件1   
+                   style(display = "block",   
+                     color = "white",   
+                         font.weight = "bold",   
+                      "border-radius" = "10px",#圆角大小        
+                  "padding-right" = "4px",#背景色框的大小      
+                   "background-color" = "#990000"#背景色    
+                        ),#满足条件1变绿加粗 
+                   ifelse(x>=0.95,#条件2      
+                       style(display = "block",   
+                     color = "white",   
+                         font.weight = "bold",   
+                      "border-radius" = "10px",#圆角大小        
+                  "padding-right" = "4px",#背景色框的大小      
+                   "background-color" = "#00CCFF"#背景色    
+                        ),#满足条件2变红加粗   
+                          "color:orange")#都不满足橘黄色  
+                    )),
+centile_area = formatter("span",   
+style = x ~ ifelse(x < 0.05,#条件1   
+                   style(display = "block",   
+                     color = "white",   
+                         font.weight = "bold",   
+                      "border-radius" = "10px",#圆角大小        
+                  "padding-right" = "4px",#背景色框的大小      
+                   "background-color" = "#990000"#背景色    
+                        ),#满足条件1变绿加粗 
+                   ifelse(x>=0.95,#条件2      
+                       style(display = "block",   
+                     color = "white",   
+                         font.weight = "bold",   
+                      "border-radius" = "10px",#圆角大小        
+                  "padding-right" = "4px",#背景色框的大小      
+                   "background-color" = "#00CCFF"#背景色    
+                        ),#满足条件2变红加粗   
+                          "color:orange")#都不满足橘黄色  
+                    ))))
+
+export_formattable(p,"local_summary.png")
+
+
+```
+
+
+```{r warning = FALSE, include = TRUE,echo=FALSE, out.width="100%",fig.align='left',fig.show='hold',fig.cap=paste0('Note:lh,left hemisphere;rh:right hemisphere')}
+library(knitr)
+p1<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/global_summary.png')
+p2<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/local_summary.png')
+knitr::include_graphics(c(p1))
+
+```
+\newpage
+
+```{r warning = FALSE, include = TRUE,echo=FALSE, out.width="100%",fig.align='left',fig.show='hold',fig.cap=paste0('Note:lh,left hemisphere;rh:right hemisphere')}
+library(knitr)
+p1<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/global_summary.png')
+p2<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/local_summary.png')
+knitr::include_graphics(c(p2))
+
+```
+
+\newpage
+## Disease propensity score:
+```{r, warning = FALSE, include = FALSE,echo=FALSE}
+library(ggplot2)
+library(ggpubr)
+
+width1 = 4; height1=3
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test');
+individual_data<-read.csv('individual_centile_score.csv',header=TRUE,check.names=F);
+
+
+tem_data<-individual_data[1,individual_data[1,]<0.05]
+
+
+```
+
+```{r, warning = FALSE, include = FALSE,echo=FALSE}
+library(ggplot2)
+library(ggpubr)
+rm (list = ls ())
+width1 = 4; height1=3
+setwd('C:/ZZZ/work/manuscript/Lifespan-main/test');
+individual_data<-read.csv('individual_centile_score.csv',header=TRUE,check.names=F);
+
+model<-readRDS('C:/ZZZ/work/manuscript/Lifespan-main/test_zzz_update_20240116/figure3/global_and_local_feature/global_and_local_feature_ROC_loop_lasso_selection.rds')
+
+model$model$MCI
+if(individual_data$Sex=='Male')
+{
+individual_data[1,'Sex']<-1
+}
+if(individual_data$Sex=='Female')
+{
+individual_data[1,'Sex']<-0
+}
+individual_data$Sex<-as.numeric(individual_data$Sex)
+
+Pre_MCI<-predict(model$model$MCI,type='response',newdata=individual_data);
+Pre_AD<-predict(model$model$AD,type='response',newdata=individual_data);
+Pre_PD<-predict(model$model$PD,type='response',newdata=individual_data);
+Pre_CSVD<-predict(model$model$SVD,type='response',newdata=individual_data);
+Pre_MS<-predict(model$model$MS,type='response',newdata=individual_data);
+Pre_NMOSD<-predict(model$model$AQP4Pos_NMOSD,type='response',newdata=individual_data);
+
+
+library(fmsb)
+  
+  rad_data0<-data.frame(matrix(NA,3,6));
+  rad_data0[1,] <- data.frame(t(c(1,1,1,1,1,1)));
+  rad_data0[2,] <- data.frame(t(c(0,0,0,0,0,0)));
+  rad_data0[3,] <- data.frame(t(c(Pre_MCI,Pre_AD,Pre_PD,Pre_CSVD,Pre_MS,Pre_NMOSD)));
+  colnames(rad_data0)<-c('MCI','AD','PD','CSVD','MS','NMOSD')
+  rownames(rad_data0)<-c('Max','Min','value')
+  
+  # rad_data0<-data.frame(matrix(NA,3,4));
+  # rad_data0[1,] <- data.frame(t(c(1,1,1,1)));
+  # rad_data0[2,] <- data.frame(t(c(0,0,0,0)));
+  # rad_data0[3,] <- data.frame(t(c(Pre_MCI,Pre_AD,Pre_PD,Pre_CSVD)));
+  # colnames(rad_data0)<-c('MCI','AD','PD','CSVD')
+  # rownames(rad_data0)<-c('Max','Min','value')
+
+  png(filename = paste0("disease_risk.png"),
+    width = 1500,
+    height = 1500,
+    units = "px",
+    bg = "white",
+    res = 300)
+
+  
+ p<-radarchart(rad_data0,
+             axistype = 1,
+             seg=5,
+             centerzero=TRUE,
+             # Customize the polygon
+             pcol = "black",
+             pfcol = scales::alpha("lightgrey", 0.5), 
+             plwd = 2, plty = 1,
+             # Customize the grid
+             cglcol = "lightgrey", cglty = 2, 
+             #cglwd = 0.8,
+             # Customize the axis
+             axislabcol = "black",
+             cglwd=1,
+             # Variable labels
+             vlcex = 1, palcex = 1,
+             vlabels = colnames(rad_data0),
+             caxislabels = c(0,1/5, 
+                            1/5*2, 
+                             1/5*3, 
+                             1/5*4,
+                             1/5*5))
+print(p)
+dev.off()
+
+write.csv(rad_data0,'Disease_propensity_score.csv')
+#ggsave(paste0("disease_risk.png"),width = width1, height = height1, dpi = 300)
+#dev.off()
+
+```
+
+```{r warning = FALSE, include = TRUE,echo=FALSE, out.width="80%",fig.align='center',fig.show='hold',fig.cap=' '}
+library(knitr)
+p1<-file.path('C:/ZZZ/work/manuscript/Lifespan-main/test/disease_risk.png')
+
+knitr::include_graphics(c(p1))
+
+```
+
+
+Note that this quantitative report is just for clinical research currently.
